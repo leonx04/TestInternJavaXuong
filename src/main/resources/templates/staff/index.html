@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Quản lý nhân viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          referrerpolicy="no-referrer" rel="stylesheet"/>
+    <style>
+        .alert-float {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <h2 class="my-4 text-decoration-none text-dark" href="/staff/index">Quản lý nhân viên</h2>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Danh sách nhân viên</h5>
+                <div>
+                    <button class="btn btn-dark">Import nhân viên</button>
+                    <button class="btn btn-dark">Download Template</button>
+                    <button class="btn btn-dark" data-bs-target="#employeeModal" data-bs-toggle="modal" type="button">
+                        Thêm nhân viên
+                    </button>
+                    <button class="btn btn-dark">Xem lịch sử import</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Mã nhân viên</th>
+                    <th>Tên nhân viên</th>
+                    <th>Email FPT</th>
+                    <th>Email FE</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="staff, iter : ${staffPage.content}">
+                    <td th:text="${iter.index + 1}"></td>
+                    <td th:text="${staff.staffCode}"></td>
+                    <td th:text="${staff.name}"></td>
+                    <td th:text="${staff.accountFpt}"></td>
+                    <td th:text="${staff.accountFe}"></td>
+                    <td th:text="${staff.status == 1 ? 'Đang hoạt động' : 'Ngừng hoạt động'}"></td>
+                    <td>
+                        <a class="text-primary" th:href="@{/staff/edit/{id}(id=${staff.id})}"><i class="bi bi-pencil-square" data-bs-toggle="tooltip" title="Xem chi tiết"></i></a>
+                        <form th:action="@{/staff/toggle-status/{id}(id=${staff.id})}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-link text-danger p-0" data-bs-toggle="tooltip" title="Cập nhật trạng thái">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                         <a class="text-dark" th:href="@{/staff/major/{id}(id=${staff.id})}"  data-bs-toggle="tooltip" title="Xem chuyên nghành"><i class="bi bi-eye"></i></a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(staffPage.content)}">
+                    <td colspan="7" class="text-center">Không có dữ liệu để hiển thị</td>
+                </tr>
+                </tbody>
+            </table>
+            <!-- Phân trang -->
+            <nav>
+                <ul class="pagination justify-content-end">
+                    <li class="page-item" th:classappend="${staffPage.hasPrevious()} ? '' : 'disabled'">
+                        <a class="page-link" th:href="@{/staff/index(page=${staffPage.number - 1}, size=${staffPage.size})}">Trước</a>
+                    </li>
+                    <li class="page-item" th:classappend="${staffPage.isFirst()} ? 'disabled' : ''">
+                        <a class="page-link" th:href="@{/staff/index(page=${staffPage.number}, size=${staffPage.size})}"
+                           th:text="${staffPage.number + 1}"></a>
+                    </li>
+                    <li class="page-item" th:classappend="${staffPage.hasNext()} ? '' : 'disabled'">
+                        <a class="page-link" th:href="@{/staff/index(page=${staffPage.number + 1}, size=${staffPage.size})}">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <div id="employeeModal" class="modal fade" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true" th:classappend="${showModal} ? 'show' : ''">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form th:action="@{/staff/create}" method="post" th:object="${staffForm}">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="employeeModalLabel">Thêm nhân viên</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="staffCode" class="form-label">Mã nhân viên (*)</label>
+                            <input type="text" class="form-control" id="staffCode" th:field="*{staffCode}" th:classappend="${#fields.hasErrors('staffCode')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('staffCode')}" th:errors="*{staffCode}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Tên nhân viên (*)</label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountFpt" class="form-label">Email FPT (*)</label>
+                            <input type="email" class="form-control" id="accountFpt" th:field="*{accountFpt}" th:classappend="${#fields.hasErrors('accountFpt')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('accountFpt')}" th:errors="*{accountFpt}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountFe" class="form-label">Email FE (*)</label>
+                            <input type="email" class="form-control" id="accountFe" th:field="*{accountFe}" th:classappend="${#fields.hasErrors('accountFe')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('accountFe')}" th:errors="*{accountFe}"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Lấy tham chiếu đến modal
+        const employeeModal = document.getElementById('employeeModal');
+
+        // Kiểm tra xem có lỗi validate hay không
+        const hasErrors = document.querySelector('.invalid-feedback') !== null;
+
+        // Kiểm tra xem có thuộc tính showModal hay không
+        const showModal = [[${showModal}]] === true;
+
+        // Nếu có lỗi validate hoặc showModal là true, hiển thị modal
+        if (hasErrors || showModal) {
+            const myModal = new bootstrap.Modal(employeeModal);
+            myModal.show();
+        }
+
+        // Lắng nghe sự kiện đóng modal
+        employeeModal.addEventListener('hidden.bs.modal', function () {
+            // Xóa các thông báo lỗi
+            document.querySelectorAll('.invalid-feedback').forEach(function(element) {
+                element.style.display = 'none';
+            });
+
+            // Reset form
+            document.querySelector('form').reset();
+        });
+
+    });
+</script>
+</body>
+</html>

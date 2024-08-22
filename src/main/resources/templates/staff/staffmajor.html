@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý bộ môn / chuyên ngành</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="container mt-5">
+  <h4>Quản lý bộ môn / chuyên ngành</h4>
+
+  <!-- Thông tin nhân viên -->
+  <div class="p-3 mb-4 border rounded">
+    <h5>Thông tin nhân viên</h5>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label for="ma" class="form-label">Mã</label>
+        <input type="text" class="form-control" id="ma" th:value="${staffMajor.staff.staffCode}" readonly>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label for="ten" class="form-label">Tên</label>
+        <input type="text" class="form-control" id="ten" th:value="${staffMajor.staff.name}" readonly>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label for="emailFPT" class="form-label">Email FPT</label>
+        <input type="email" class="form-control" id="emailFPT" th:value="${staffMajor.staff.accountFpt}" readonly>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label for="emailFE" class="form-label">Email FE</label>
+        <input type="email" class="form-control" id="emailFE" th:value="${staffMajor.staff.accountFe}" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danh sách bộ môn, chuyên ngành -->
+  <div class="p-3 mb-4 border rounded">
+    <h5>Danh sách bộ môn, chuyên ngành theo cơ sở</h5>
+    <table class="table">
+      <thead>
+      <tr>
+        <th scope="col">STT</th>
+        <th scope="col">Cơ sở</th>
+        <th scope="col">Bộ môn</th>
+        <th scope="col">Chuyên ngành</th>
+        <th scope="col">Hành động</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="major, iter : ${staffMajor.majorFacility}">
+        <th scope="row" th:text="${iter.index + 1}"></th>
+        <td th:text="${staffMajor.majorFacility.getMajor().name}"></td>
+        <td th:text="${staffMajor.majorFacility.departmentFacility.facility.name}"></td>
+        <td th:text="${major.name}"></td>
+        <td>
+          <form th:action="@{/staff/major/delete/{id}(id=${major.id})}" method="post">
+            <button type="submit" class="btn btn-danger btn-sm">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+    <form th:action="@{/staff/major/add}" method="post" th:object="${staffMajor}">
+      <button type="submit" class="btn btn-dark">Thêm bộ môn chuyên ngành</button>
+    </form>
+  </div>
+
+  <p class="text-danger"><strong>*** Chú ý: Nhân viên chỉ có một bộ môn và một chuyên ngành trong một cơ sở ***</strong></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
