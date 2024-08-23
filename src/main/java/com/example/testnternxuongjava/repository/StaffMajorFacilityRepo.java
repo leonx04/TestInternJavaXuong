@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,9 +16,9 @@ import java.util.UUID;
  */
 @Repository
 public interface StaffMajorFacilityRepo extends JpaRepository<StaffMajorFacilityEntity, UUID> {
-    StaffMajorFacilityEntity findByStaffId(UUID id);
+    List<StaffMajorFacilityEntity> findByStaffId(UUID staffId);
+    boolean existsByStaffIdAndMajorFacilityDepartmentFacilityFacilityId(UUID staffId, UUID facilityId);
 
-    @Transactional
-    @Modifying
-    void deleteByStaffAndMajorFacility(StaffEntity staff, MajorFacilityEntity majorFacility);
+
+    List<StaffMajorFacilityEntity> findByStaffIdAndMajorFacilityDepartmentFacilityFacilityId(UUID staffId, UUID facilityId);
 }

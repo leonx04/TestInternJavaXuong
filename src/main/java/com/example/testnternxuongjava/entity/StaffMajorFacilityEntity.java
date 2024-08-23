@@ -40,4 +40,5 @@ public class StaffMajorFacilityEntity {
     @ManyToOne
     @JoinColumn(name = "id_staff")
     private StaffEntity staff;
+
 }

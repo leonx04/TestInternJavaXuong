@@ -4,6 +4,8 @@ import com.example.testnternxuongjava.entity.MajorFacilityEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -11,4 +13,7 @@ import java.util.UUID;
  */
 @Repository
 public interface MajorFacilityrRepo extends JpaRepository<MajorFacilityEntity, UUID> {
+    Optional<MajorFacilityEntity> findByDepartmentFacilityDepartmentIdAndDepartmentFacilityFacilityIdAndMajorId(UUID departmentId, UUID facilityId, UUID majorId);
+
+    Optional<MajorFacilityEntity> findByMajorNameAndDepartmentFacilityDepartmentNameAndDepartmentFacilityFacilityName(String majorName, String departmentName, String facilityName);
 }

@@ -28,13 +28,18 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
-    <div class="card">
+    <div class="card mb-4 shadow-sm">
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Danh sách nhân viên</h5>
                 <div>
-                    <button class="btn btn-dark">Import nhân viên</button>
-                    <button class="btn btn-dark">Download Template</button>
+                    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#importModal">
+                        Import nhân viên
+                    </button>
+                    <button class="btn btn-dark" th:onclick="'window.location.href=\'' + @{/staff/download-template} + '\''">
+                        Download Template
+                    </button>
+
                     <button class="btn btn-dark" data-bs-target="#employeeModal" data-bs-toggle="modal" type="button">
                         Thêm nhân viên
                     </button>
@@ -43,7 +48,7 @@
             </div>
         </div>
         <div class="card-body">
-            <table class="table table-striped table-hover">
+            <table class="table table-striped table-hover table-bordered">
                 <thead>
                 <tr>
                     <th>STT</th>
@@ -70,7 +75,7 @@
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
-                         <a class="text-dark" th:href="@{/staff/major/{id}(id=${staff.id})}"  data-bs-toggle="tooltip" title="Xem chuyên nghành"><i class="bi bi-eye"></i></a>
+                        <a class="text-dark" th:href="@{/staff-major/{id}(id=${staff.id})}"  data-bs-toggle="tooltip" title="Xem chuyên nghành"><i class="bi bi-eye"></i></a>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(staffPage.content)}">
@@ -96,6 +101,32 @@
         </div>
     </div>
 
+    <!-- Modal Import Nhân Viên -->
+    <div id="importModal" class="modal fade" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form th:action="@{/staff/import}" method="post" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="importModalLabel">Import Nhân Viên</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="fileUpload" class="form-label">Chọn tệp CSV (*)</label>
+                            <input type="file" class="form-control" id="fileUpload" name="file" required>
+                            <div class="invalid-feedback">Vui lòng chọn tệp CSV để import.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm Nhân Viên -->
     <div id="employeeModal" class="modal fade" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true" th:classappend="${showModal} ? 'show' : ''">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -141,6 +172,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Lấy tham chiếu đến modal
         const employeeModal = document.getElementById('employeeModal');
+        const importModal = document.getElementById('importModal');
 
         // Kiểm tra xem có lỗi validate hay không
         const hasErrors = document.querySelector('.invalid-feedback') !== null;
@@ -165,6 +197,13 @@
             document.querySelector('form').reset();
         });
 
+        // Khởi tạo modal import nhân viên
+        const importModalInstance = new bootstrap.Modal(importModal);
+
+        // Lắng nghe sự kiện đóng modal import
+        importModal.addEventListener('hidden.bs.modal', function () {
+            document.querySelector('#importModal form').reset();
+        });
     });
 </script>
 </body>

@@ -153,3 +153,37 @@ VALUES
 ('550e8400-e29b-41d4-a716-446655440061', 1, 1627849200000, 1627935600000, '550e8400-e29b-41d4-a716-446655440051', '550e8400-e29b-41d4-a716-446655440001'),
 ('550e8400-e29b-41d4-a716-446655440062', 1, 1627849200000, 1627935600000, '550e8400-e29b-41d4-a716-446655440052', '550e8400-e29b-41d4-a716-446655440002');
 GO
+-- Kiểm tra dữ liệu trong bảng staff
+SELECT * FROM staff;
+
+-- Kiểm tra dữ liệu trong bảng facility
+SELECT * FROM facility;
+
+-- Kiểm tra dữ liệu trong bảng department
+SELECT * FROM department;
+
+-- Kiểm tra dữ liệu trong bảng department_facility
+SELECT * FROM department_facility;
+
+-- Kiểm tra dữ liệu trong bảng major
+SELECT * FROM major;
+
+-- Kiểm tra dữ liệu trong bảng major_facility
+SELECT * FROM major_facility;
+
+-- Kiểm tra dữ liệu trong bảng staff_major_facility
+SELECT * FROM staff_major_facility;
+SELECT
+    m.name AS major_name,
+    d.name AS department_name,
+    f.name AS facility_name
+FROM
+    major m
+        JOIN
+    major_facility mf ON m.id = mf.id_major
+        JOIN
+    department_facility df ON mf.id_department_facility = df.id
+        JOIN
+    department d ON df.id_department = d.id
+        JOIN
+    facility f ON df.id_facility = f.id;
