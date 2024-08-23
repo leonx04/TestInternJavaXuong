@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Quản lý nhân viên</title>
+    <link rel="shortcut icon" href="https://scontent.fhan17-1.fna.fbcdn.net/v/t39.30808-1/456337437_1174565436928254_5611460166021283456_n.jpg?stp=c25.18.170.170a_dst-jpg_p200x200&_nc_cat=105&ccb=1-7&_nc_sid=0ecb9b&_nc_eui2=AeFu-PcLvH4393lqp3-AWuzLhM7q3Xzu40aEzurdfO7jRjTaoOvabtuPRxtEF1fYAkPVHbsCTpiAKQXd9UvND6Pu&_nc_ohc=NDSPXADChBAQ7kNvgG7cUsH&_nc_ht=scontent.fhan17-1.fna&oh=00_AYAzq4iEXv7LNI1_o17kcAPB_kZKDQyWLvqEBtYnr3bJxg&oe=66CDFE7D" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -27,9 +28,9 @@
         <span th:text="${successMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-    <div th:if="${errorLog}" class="alert alert-danger">
-        <pre th:text="${errorLog}"></pre>
-    </div>
+<!--    <div th:if="${errorLog}" class="alert alert-danger">-->
+<!--        <pre th:text="${errorLog}"></pre>-->
+<!--    </div>-->
 
     <div class="card mb-4 shadow-sm">
         <div class="card-header">
@@ -46,7 +47,9 @@
                     <button class="btn btn-dark" data-bs-target="#employeeModal" data-bs-toggle="modal" type="button">
                         Thêm nhân viên
                     </button>
-                    <button class="btn btn-dark">Xem lịch sử import</button>
+                    <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#importHistoryModal">
+                        Xem lịch sử import
+                    </button>
                 </div>
             </div>
         </div>
@@ -144,6 +147,34 @@
             </div>
         </div>
     </div>
+    <!-- Modal Lịch sử import -->
+    <div id="importHistoryModal" class="modal fade" tabindex="-1" aria-labelledby="importHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importHistoryModalLabel">Lịch sử thao tác</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ngày tạo</th>
+                            <th>Nội dung</th>
+                            <th>Đường dẫn</th>
+                        </tr>
+                        </thead>
+                        <tbody id="importHistoryTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Thêm Nhân Viên -->
     <div id="employeeModal" class="modal fade" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true" th:classappend="${showModal} ? 'show' : ''">
@@ -187,41 +218,132 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
+<script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', function() {
-        // Lấy tham chiếu đến modal
-        const employeeModal = document.getElementById('employeeModal');
-        const importModal = document.getElementById('importModal');
-
-        // Kiểm tra xem có lỗi validate hay không
-        const hasErrors = document.querySelector('.invalid-feedback') !== null;
-
-        // Kiểm tra xem có thuộc tính showModal hay không
-        const showModal = [[${showModal}]] === true;
-
-        // Nếu có lỗi validate hoặc showModal là true, hiển thị modal
-        if (hasErrors || showModal) {
-            const myModal = new bootstrap.Modal(employeeModal);
-            myModal.show();
+        // Xử lý hiển thị modal thêm nhân viên nếu có lỗi
+        const showModal = [[${showModal}]];
+        if (showModal) {
+            const employeeModal = new bootstrap.Modal(document.getElementById('employeeModal'));
+            employeeModal.show();
         }
 
-        // Lắng nghe sự kiện đóng modal
-        employeeModal.addEventListener('hidden.bs.modal', function () {
-            // Xóa các thông báo lỗi
-            document.querySelectorAll('.invalid-feedback').forEach(function(element) {
-                element.style.display = 'none';
-            });
+        // Xử lý hiển thị thông báo thành công
+        const successMessage = [[${successMessage}]];
+        if (successMessage) {
+            const alertElement = document.createElement('div');
+            alertElement.className = 'alert alert-success alert-dismissible fade show';
+            alertElement.setAttribute('role', 'alert');
+            alertElement.innerHTML = `
+            ${successMessage}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+            document.querySelector('.container-fluid').prepend(alertElement);
+        }
 
-            // Reset form
-            document.querySelector('form').reset();
+        // Xử lý hiển thị lịch sử import
+        const importHistoryModal = document.getElementById('importHistoryModal');
+        importHistoryModal.addEventListener('show.bs.modal', function() {
+            fetch('/staff/import-history')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('importHistoryTableBody');
+                    tableBody.innerHTML = '';
+                    data.forEach((item, index) => {
+                        const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${new Date(item.createdDate).toLocaleString()}</td>
+                            <td>${item.content}</td>
+                            <td>${item.filePath}</td>
+                        </tr>
+                    `;
+                        tableBody.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error('Error:', error));
         });
 
-        // Khởi tạo modal import nhân viên
-        const importModalInstance = new bootstrap.Modal(importModal);
+        // Xử lý import file
+        const importForm = document.getElementById('importForm');
+        const fileInput = document.getElementById('fileInput');
+        const importButton = document.getElementById('importButton');
 
-        // Lắng nghe sự kiện đóng modal import
-        importModal.addEventListener('hidden.bs.modal', function () {
-            document.querySelector('#importModal form').reset();
+        importForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (fileInput.files.length === 0) {
+                alert('Vui lòng chọn file để import');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            importButton.disabled = true;
+            importButton.textContent = 'Đang import...';
+
+            fetch('/staff/import', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Import thành công: ' + data.message);
+                        location.reload();
+                    } else {
+                        alert('Import thất bại: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi import');
+                })
+                .finally(() => {
+                    importButton.disabled = false;
+                    importButton.textContent = 'Import';
+                    fileInput.value = '';
+                });
+        });
+
+        // Xử lý tải template
+        const downloadTemplateButton = document.getElementById('downloadTemplateButton');
+        downloadTemplateButton.addEventListener('click', function() {
+            window.location.href = '/staff/download-template';
+        });
+
+        // Xử lý phân trang
+        const paginationLinks = document.querySelectorAll('.pagination .page-link');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+
+        // Xử lý thay đổi trạng thái nhân viên
+        const toggleStatusButtons = document.querySelectorAll('.toggle-status');
+        toggleStatusButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                if (confirm('Bạn có chắc chắn muốn thay đổi trạng thái của nhân viên này?')) {
+                    fetch(url, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload();
+                            } else {
+                                alert('Có lỗi xảy ra: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Có lỗi xảy ra khi thay đổi trạng thái');
+                        });
+                }
+            });
         });
     });
 </script>

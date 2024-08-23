@@ -98,7 +98,14 @@ CREATE TABLE staff_major_facility (
 		FOREIGN KEY (id_staff) REFERENCES staff (id)
 );
 GO
-
+CREATE TABLE import_history (
+                                id uniqueidentifier NOT NULL PRIMARY KEY,
+                                created_date bigint NULL,
+                                content nvarchar(MAX) NULL,
+                                file_path nvarchar(255) NULL,
+                                success_count int NULL,
+                                failure_count int NULL
+);
 -- Insert data into the staff table
 INSERT INTO staff (id, status, created_date, last_modified_date, account_fe, account_fpt, name, staff_code)
 VALUES

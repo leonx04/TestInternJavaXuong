@@ -1,8 +1,10 @@
 package com.example.testnternxuongjava.controller;
 
+import com.example.testnternxuongjava.entity.ImportHistoryEntity;
 import com.example.testnternxuongjava.entity.MajorFacilityEntity;
 import com.example.testnternxuongjava.entity.StaffEntity;
 import com.example.testnternxuongjava.entity.StaffMajorFacilityEntity;
+import com.example.testnternxuongjava.repository.ImportHistoryRepo;
 import com.example.testnternxuongjava.repository.MajorFacilityrRepo;
 import com.example.testnternxuongjava.repository.StaffMajorFacilityRepo;
 import com.example.testnternxuongjava.repository.StaffRepo;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +43,9 @@ public class StaffController {
     MajorFacilityrRepo majorFacilityRepo;
     @Autowired
     private StaffMajorFacilityRepo staffMajorFacilityRepo;
+
+    @Autowired
+    private ImportHistoryRepo importHistoryRepo;
     @GetMapping("/index")
     public String getStaff(@RequestParam(value = "page", defaultValue = "0") int page,
                            @RequestParam(value = "size", defaultValue = "5") int size,
@@ -66,7 +72,7 @@ public class StaffController {
             model.addAttribute("showModal", true);
             return "staff/index";
         }
-        staff.setStatus(0);
+        staff.setStatus(1);
         staff.setCreatedDate(System.currentTimeMillis());
         staffRepo.save(staff);
         redirectAttributes.addFlashAttribute("successMessage", "Nhân viên đã được thêm thành công");
@@ -202,13 +208,6 @@ public class StaffController {
                     String accountFe = getCellValueAsString(row.getCell(4));
                     String majorInfo = getCellValueAsString(row.getCell(5));
 
-                    System.out.println("Processing row " + rowIndex + ":");
-                    System.out.println("Staff Code: " + staffCode);
-                    System.out.println("Name: " + name);
-                    System.out.println("FPT Account: " + accountFpt);
-                    System.out.println("FE Account: " + accountFe);
-                    System.out.println("Major Info: " + majorInfo);
-
                     if (!isValidEmail(accountFpt, staffCode) || !isValidEmail(accountFe, staffCode)) {
                         throw new RuntimeException("Email FPT hoặc FE không hợp lệ hoặc không chứa mã nhân viên");
                     }
@@ -222,9 +221,7 @@ public class StaffController {
                     staff.setCreatedDate(System.currentTimeMillis());
 
                     staffRepo.save(staff);
-                    System.out.println("Staff saved successfully");
 
-                    // Process major info
                     String[] majorParts = majorInfo.split(" - ");
                     if (majorParts.length < 3) {
                         throw new RuntimeException("Thông tin bộ môn - chuyên ngành - cơ sở không hợp lệ");
@@ -234,18 +231,10 @@ public class StaffController {
                     String departmentName = majorParts[1].trim();
                     String facilityName = majorParts[2].replaceAll("[()]", "").trim();
 
-                    System.out.println("Major: " + majorName);
-                    System.out.println("Department: " + departmentName);
-                    System.out.println("Facility: " + facilityName);
-
-
                     MajorFacilityEntity majorFacility = majorFacilityRepo
                             .findByMajorNameAndDepartmentFacilityDepartmentNameAndDepartmentFacilityFacilityName(
                                     majorName, departmentName, facilityName)
                             .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ môn - chuyên ngành - cơ sở tương ứng"));
-
-                    System.out.println("MajorFacility found");
-
 
                     StaffMajorFacilityEntity staffMajor = new StaffMajorFacilityEntity();
                     staffMajor.setStaff(staff);
@@ -254,15 +243,22 @@ public class StaffController {
                     staffMajor.setCreatedDate(System.currentTimeMillis());
 
                     staffMajorFacilityRepo.save(staffMajor);
-                    System.out.println("StaffMajorFacility saved successfully");
 
                     importedCount++;
                 } catch (Exception e) {
                     String errorMessage = "Error processing row " + rowIndex + ": " + e.getMessage();
-                    System.err.println(errorMessage);
                     errorLog.append(errorMessage).append("\n");
                 }
             }
+
+            // Lưu lịch sử import
+            ImportHistoryEntity importHistory = new ImportHistoryEntity();
+            importHistory.setCreatedDate(System.currentTimeMillis());
+            importHistory.setFilePath(file.getOriginalFilename());
+            importHistory.setContent("Import nhân viên từ file Excel");
+            importHistory.setSuccessCount(importedCount);
+            importHistory.setFailureCount(rowIndex - 1 - importedCount);
+            importHistoryRepo.save(importHistory);
 
             if (importedCount > 0) {
                 redirectAttributes.addFlashAttribute("success", "Import thành công. Số bản ghi đã import: " + importedCount);
@@ -278,6 +274,12 @@ public class StaffController {
         }
 
         return "redirect:/staff/index";
+    }
+
+    @GetMapping("/import-history")
+    @ResponseBody
+    public List<ImportHistoryEntity> getImportHistory() {
+        return importHistoryRepo.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
     }
 
     private boolean isValidEmail(String email, String staffCode) {
