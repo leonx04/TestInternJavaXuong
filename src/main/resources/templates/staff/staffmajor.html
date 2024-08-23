@@ -27,20 +27,20 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-3 mb-3">
-                    <label class="form-label">Mã nhân viên:</label>
-                    <input class="form-control" readonly th:value="${staff.staffCode}" type="text">
+                    <label class="form-label" for="staffCode">Mã nhân viên:</label>
+                    <input class="form-control" readonly th:value="${staff.staffCode}" type="text" id="staffCode">
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label class="form-label">Tên:</label>
-                    <input class="form-control" readonly th:value="${staff.name}" type="text">
+                    <label class="form-label" for="name">Tên:</label>
+                    <input class="form-control" readonly th:value="${staff.name}" type="text" id="name">
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label class="form-label">Email FPT:</label>
-                    <input class="form-control" readonly th:value="${staff.accountFpt}" type="text">
+                    <label class="form-label" for="accountFpt">Email FPT:</label>
+                    <input class="form-control" readonly th:value="${staff.accountFpt}" type="text" id="accountFpt">
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label class="form-label">Email FE:</label>
-                    <input class="form-control" readonly th:value="${staff.accountFe}" type="text">
+                    <label class="form-label" for="accountFe"> Email FE:</label>
+                    <input class="form-control" readonly th:value="${staff.accountFe}" type="text" id="accountFe">
                 </div>
             </div>
         </div>

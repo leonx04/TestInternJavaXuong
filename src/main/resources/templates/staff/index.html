@@ -97,7 +97,9 @@
                 <ul class="pagination justify-content-end">
                     <!-- Nút đầu tiên -->
                     <li class="page-item" th:classappend="${staffPage.first} ? 'disabled' : ''">
-                        <a class="page-link" th:href="@{/staff/index(page=0, size=${staffPage.size})}"><<</a>
+                        <a class="page-link" th:href="@{/staff/index(page=0, size=${staffPage.size})}">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
                     </li>
 
                     <!-- Nút Trước -->
@@ -119,7 +121,9 @@
 
                     <!-- Nút cuối cùng -->
                     <li class="page-item" th:classappend="${staffPage.last} ? 'disabled' : ''">
-                        <a class="page-link" th:href="@{/staff/index(page=${staffPage.totalPages - 1}, size=${staffPage.size})}">>></a>
+                        <a class="page-link" th:href="@{/staff/index(page=${staffPage.totalPages - 1}, size=${staffPage.size})}">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
                     </li>
                 </ul>
             </nav>
@@ -224,7 +228,7 @@
 <script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', function() {
         // Xử lý hiển thị modal thêm nhân viên nếu có lỗi
-        const showModal = [[${showModal}]];
+        const showModal = [[${showModal}]] ;
         if (showModal) {
             const employeeModal = new bootstrap.Modal(document.getElementById('employeeModal'));
             employeeModal.show();

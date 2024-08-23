@@ -96,7 +96,11 @@ public class SubjectManagementController {
         // Lọc ra các cơ sở mà nhân viên chưa được gán bộ môn chuyên ngành
         List<FacilityEntity> availableFacilities = facilities.stream()
                 .filter(facility -> staffMajors.stream()
-                        .noneMatch(sm -> sm.getMajorFacility().getDepartmentFacility().getFacility().getId().equals(facility.getId())))
+                        .noneMatch(sm -> sm.getMajorFacility()
+                        .getDepartmentFacility()
+                        .getFacility()
+                        .getId()
+                        .equals(facility.getId())))
                 .collect(Collectors.toList());
 
         data.put("facilities", availableFacilities);
@@ -130,7 +134,6 @@ public class SubjectManagementController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
         }
-
         return "redirect:/staff-major/" + staffId;
     }
 }
