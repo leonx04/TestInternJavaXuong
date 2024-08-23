@@ -27,6 +27,9 @@
         <span th:text="${successMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+    <div th:if="${errorLog}" class="alert alert-danger">
+        <pre th:text="${errorLog}"></pre>
+    </div>
 
     <div class="card mb-4 shadow-sm">
         <div class="card-header">
@@ -62,7 +65,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="staff, iter : ${staffPage.content}">
-                    <td th:text="${iter.index + 1}"></td>
+                    <td th:text="${(staffPage.number * staffPage.size) + iter.index + 1}"></td>
                     <td th:text="${staff.staffCode}"></td>
                     <td th:text="${staff.name}"></td>
                     <td th:text="${staff.accountFpt}"></td>
@@ -86,15 +89,31 @@
             <!-- Phân trang -->
             <nav>
                 <ul class="pagination justify-content-end">
-                    <li class="page-item" th:classappend="${staffPage.hasPrevious()} ? '' : 'disabled'">
+                    <!-- Nút đầu tiên -->
+                    <li class="page-item" th:classappend="${staffPage.first} ? 'disabled' : ''">
+                        <a class="page-link" th:href="@{/staff/index(page=0, size=${staffPage.size})}"><<</a>
+                    </li>
+
+                    <!-- Nút Trước -->
+                    <li class="page-item" th:classappend="${!staffPage.hasPrevious()} ? 'disabled' : ''">
                         <a class="page-link" th:href="@{/staff/index(page=${staffPage.number - 1}, size=${staffPage.size})}">Trước</a>
                     </li>
-                    <li class="page-item" th:classappend="${staffPage.isFirst()} ? 'disabled' : ''">
-                        <a class="page-link" th:href="@{/staff/index(page=${staffPage.number}, size=${staffPage.size})}"
-                           th:text="${staffPage.number + 1}"></a>
+
+                    <!-- Hiển thị các trang lân cận -->
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, staffPage.totalPages - 1)}"
+                        th:classappend="${i == staffPage.number} ? 'active' : ''">
+                        <a class="page-link" th:href="@{/staff/index(page=${i}, size=${staffPage.size})}"
+                           th:text="${i + 1}"></a>
                     </li>
-                    <li class="page-item" th:classappend="${staffPage.hasNext()} ? '' : 'disabled'">
+
+                    <!-- Nút Sau -->
+                    <li class="page-item" th:classappend="${!staffPage.hasNext()} ? 'disabled' : ''">
                         <a class="page-link" th:href="@{/staff/index(page=${staffPage.number + 1}, size=${staffPage.size})}">Sau</a>
+                    </li>
+
+                    <!-- Nút cuối cùng -->
+                    <li class="page-item" th:classappend="${staffPage.last} ? 'disabled' : ''">
+                        <a class="page-link" th:href="@{/staff/index(page=${staffPage.totalPages - 1}, size=${staffPage.size})}">>></a>
                     </li>
                 </ul>
             </nav>

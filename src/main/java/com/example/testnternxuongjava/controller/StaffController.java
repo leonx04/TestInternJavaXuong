@@ -179,77 +179,147 @@ public class StaffController {
     @PostMapping("/import")
     public String importStaff(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
         if (file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("message", "Vui lòng chọn một file để tải lên");
+            redirectAttributes.addFlashAttribute("error", "Vui lòng chọn một file để tải lên");
             return "redirect:/staff/index";
         }
 
-        try {
-            Workbook workbook = new XSSFWorkbook(file.getInputStream());
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
-            Iterator<Row> rows = sheet.iterator();
             int importedCount = 0;
+            int rowIndex = 0;
+            StringBuilder errorLog = new StringBuilder();
 
-            while (rows.hasNext()) {
-                Row currentRow = rows.next();
-
-                // Bỏ qua hàng tiêu đề
-                if (currentRow.getRowNum() == 0) {
+            for (Row row : sheet) {
+                rowIndex++;
+                if (rowIndex == 1) {
                     continue;
                 }
 
-                String staffCode = currentRow.getCell(1).getStringCellValue();
-                String name = currentRow.getCell(2).getStringCellValue();
-                String accountFpt = currentRow.getCell(3).getStringCellValue();
-                String accountFe = currentRow.getCell(4).getStringCellValue();
-                String majorInfo = currentRow.getCell(5).getStringCellValue();
+                try {
+                    String staffCode = getCellValueAsString(row.getCell(1));
+                    String name = getCellValueAsString(row.getCell(2));
+                    String accountFpt = getCellValueAsString(row.getCell(3));
+                    String accountFe = getCellValueAsString(row.getCell(4));
+                    String majorInfo = getCellValueAsString(row.getCell(5));
 
-                // Kiểm tra xem email FPT và email FE có chứa mã nhân viên không
-                if (!accountFpt.contains(staffCode) || !accountFe.contains(staffCode)) {
-                    continue;
+                    System.out.println("Processing row " + rowIndex + ":");
+                    System.out.println("Staff Code: " + staffCode);
+                    System.out.println("Name: " + name);
+                    System.out.println("FPT Account: " + accountFpt);
+                    System.out.println("FE Account: " + accountFe);
+                    System.out.println("Major Info: " + majorInfo);
+
+                    if (!isValidEmail(accountFpt, staffCode) || !isValidEmail(accountFe, staffCode)) {
+                        throw new RuntimeException("Email FPT hoặc FE không hợp lệ hoặc không chứa mã nhân viên");
+                    }
+
+                    StaffEntity staff = new StaffEntity();
+                    staff.setStaffCode(staffCode);
+                    staff.setName(name);
+                    staff.setAccountFpt(accountFpt);
+                    staff.setAccountFe(accountFe);
+                    staff.setStatus(1);
+                    staff.setCreatedDate(System.currentTimeMillis());
+
+                    staffRepo.save(staff);
+                    System.out.println("Staff saved successfully");
+
+                    // Process major info
+                    String[] majorParts = majorInfo.split(" - ");
+                    if (majorParts.length < 3) {
+                        throw new RuntimeException("Thông tin bộ môn - chuyên ngành - cơ sở không hợp lệ");
+                    }
+
+                    String majorName = majorParts[0].trim();
+                    String departmentName = majorParts[1].trim();
+                    String facilityName = majorParts[2].replaceAll("[()]", "").trim();
+
+                    System.out.println("Major: " + majorName);
+                    System.out.println("Department: " + departmentName);
+                    System.out.println("Facility: " + facilityName);
+
+
+                    MajorFacilityEntity majorFacility = majorFacilityRepo
+                            .findByMajorNameAndDepartmentFacilityDepartmentNameAndDepartmentFacilityFacilityName(
+                                    majorName, departmentName, facilityName)
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ môn - chuyên ngành - cơ sở tương ứng"));
+
+                    System.out.println("MajorFacility found");
+
+
+                    StaffMajorFacilityEntity staffMajor = new StaffMajorFacilityEntity();
+                    staffMajor.setStaff(staff);
+                    staffMajor.setMajorFacility(majorFacility);
+                    staffMajor.setStatus(0);
+                    staffMajor.setCreatedDate(System.currentTimeMillis());
+
+                    staffMajorFacilityRepo.save(staffMajor);
+                    System.out.println("StaffMajorFacility saved successfully");
+
+                    importedCount++;
+                } catch (Exception e) {
+                    String errorMessage = "Error processing row " + rowIndex + ": " + e.getMessage();
+                    System.err.println(errorMessage);
+                    errorLog.append(errorMessage).append("\n");
                 }
-
-                StaffEntity staff = new StaffEntity();
-                staff.setStaffCode(staffCode);
-                staff.setName(name);
-                staff.setAccountFpt(accountFpt);
-                staff.setAccountFe(accountFe);
-
-                // Lưu nhân viên vào cơ sở dữ liệu
-                staffRepo.save(staff);
-                importedCount++;
-
-                // Tách thông tin "Bộ môn - Chuyên ngành - Cơ sở"
-                String[] majorParts = majorInfo.split(" - ");
-                if (majorParts.length < 3) {
-                    // Nếu không đủ thông tin, bỏ qua hàng này
-                    continue;
-                }
-                String majorName = majorParts[0];
-                String departmentName = majorParts[1];
-                String facilityName = majorParts[2].substring(1, majorParts[2].length() - 1);
-
-                // Lấy bộ môn - chuyên ngành - cơ sở cho nhân viên không
-                MajorFacilityEntity majorFacility = majorFacilityRepo.findByMajorNameAndDepartmentFacilityDepartmentNameAndDepartmentFacilityFacilityName(majorName, departmentName, facilityName)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ môn - chuyên ngành - cơ sở tương ứng"));
-
-                // Tạo StaffMajorFacilityEntity mới
-                StaffMajorFacilityEntity staffMajor = new StaffMajorFacilityEntity();
-                staffRepo.save(staff);
-                System.out.println("Saved staff: " + staff.getName());
-                staffMajor.setMajorFacility(majorFacility);
-
-                // Lưu StaffMajorFacilityEntity vào cơ sở dữ liệu
-                staffMajorFacilityRepo.save(staffMajor);
             }
 
-            workbook.close();
-            redirectAttributes.addFlashAttribute("message", "File đã được tải lên thành công. Tổng số bản ghi đã import: " + importedCount);
+            if (importedCount > 0) {
+                redirectAttributes.addFlashAttribute("success", "Import thành công. Số bản ghi đã import: " + importedCount);
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Không có bản ghi nào được import thành công.");
+            }
+
+            if (errorLog.length() > 0) {
+                redirectAttributes.addFlashAttribute("errorLog", errorLog.toString());
+            }
         } catch (IOException e) {
-            redirectAttributes.addFlashAttribute("message", "Lỗi khi tải lên file: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Lỗi khi đọc file: " + e.getMessage());
         }
 
         return "redirect:/staff/index";
     }
 
+    private boolean isValidEmail(String email, String staffCode) {
+        if (email == null || email.isEmpty() || staffCode == null || staffCode.isEmpty()) {
+            return false;
+        }
 
+        // Remove any potential whitespace
+        email = email.trim().toLowerCase();
+        staffCode = staffCode.trim().toLowerCase();
+
+        // Check if email ends with either @fpt.edu.vn or @fe.edu.vn
+        if (!email.endsWith("@fpt.edu.vn") && !email.endsWith("@fe.edu.vn")) {
+            return false;
+        }
+
+        // Extract the part before @ and check if it contains the staff code
+        String localPart = email.split("@")[0];
+
+        // Check if the local part contains the staff code
+        return localPart.contains(staffCode);
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    return String.valueOf((long) cell.getNumericCellValue());
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return "";
+        }
+    }
 }
