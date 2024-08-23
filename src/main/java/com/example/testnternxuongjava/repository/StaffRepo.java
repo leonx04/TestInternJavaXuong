@@ -13,5 +13,7 @@ import java.util.UUID;
  * @author dungn
  */
 public interface StaffRepo extends JpaRepository<StaffEntity, UUID> {
-
+    boolean existsByStaffCode(String staffCode);
+    boolean existsByAccountFpt(String accountFpt);
+    boolean existsByAccountFe(String accountFe);
 }

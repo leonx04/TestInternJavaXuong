@@ -204,37 +204,6 @@
                 majorSelect.append($('<option>').text(mf.major.name).attr('value', mf.major.id));
             });
         }
-
-        // Add form submission handler
-        $('#addStaffMajorForm').submit(function(e) {
-            e.preventDefault();
-
-            var facilityId = $('#facility').val();
-            var departmentId = $('#department').val();
-            var majorId = $('#major').val();
-
-            if (!facilityId || !departmentId || !majorId) {
-                alert('Vui lòng chọn đầy đủ cơ sở, bộ môn và chuyên ngành.');
-                return;
-            }
-
-            $.ajax({
-                url: '/staff-major/' + staffId + '/add',
-                type: 'POST',
-                data: {
-                    facilityId: facilityId,
-                    departmentId: departmentId,
-                    majorId: majorId
-                },
-                success: function(response) {
-                    // Reload the page or update the UI as needed
-                    location.reload();
-                },
-                error: function(xhr) {
-                    alert('Có lỗi xảy ra: ' + xhr.responseText);
-                }
-            });
-        });
     });
     /*]]>*/
 </script>

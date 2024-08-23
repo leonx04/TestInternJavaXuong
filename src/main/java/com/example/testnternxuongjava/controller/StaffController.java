@@ -65,13 +65,37 @@ public class StaffController {
                               BindingResult bindingResult,
                               RedirectAttributes redirectAttributes,
                               Model model) {
-        if (bindingResult.hasErrors()) {
+        boolean hasCustomErrors = false;
+
+        // Kiểm tra trùng lặp mã nhân viên
+        if (staffRepo.existsByStaffCode(staff.getStaffCode())) {
+            bindingResult.rejectValue("staffCode", "duplicate", "Mã nhân viên đã tồn tại");
+            hasCustomErrors = true;
+        }
+
+        // Kiểm tra trùng lặp email FPT
+        if (staffRepo.existsByAccountFpt(staff.getAccountFpt())) {
+            bindingResult.rejectValue("accountFpt", "duplicate", "Email FPT đã tồn tại");
+            hasCustomErrors = true;
+        }
+
+        // Kiểm tra trùng lặp email FE
+        if (staffRepo.existsByAccountFe(staff.getAccountFe())) {
+            bindingResult.rejectValue("accountFe", "duplicate", "Email FE đã tồn tại");
+            hasCustomErrors = true;
+        }
+
+        // Nếu có bất kỳ lỗi nào, trả về form với thông báo lỗi
+        if (bindingResult.hasErrors() || hasCustomErrors) {
             Pageable pageable = PageRequest.of(0, 5);
             Page<StaffEntity> staffPage = staffRepo.findAll(pageable);
             model.addAttribute("staffPage", staffPage);
+            model.addAttribute("staffForm", staff);
             model.addAttribute("showModal", true);
             return "staff/index";
         }
+
+        // Nếu không có lỗi, tiến hành lưu nhân viên mới
         staff.setStatus(1);
         staff.setCreatedDate(System.currentTimeMillis());
         staffRepo.save(staff);
@@ -101,17 +125,48 @@ public class StaffController {
                               BindingResult bindingResult,
                               RedirectAttributes redirectAttributes,
                               Model model) {
+        // Kiểm Tra Các Lỗi Validation
         if (bindingResult.hasErrors()) {
-            // Giữ lại thông tin nhân viên nếu có lỗi và trả về form cập nhật với thông báo lỗi
             model.addAttribute("staff", staff);
             return "staff/update";
         }
 
-        // Tìm kiếm nhân viên hiện có trong cơ sở dữ liệu
+        // Tìm Kiếm Nhân Viên Hiện Có Trong Cơ Sở Dữ Liệu
         StaffEntity existingStaff = staffRepo.findById(staff.getId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
 
-        // Cập nhật các thuộc tính của nhân viên
+        // Kiểm Tra Trùng Lặp Mã Nhân Viên
+        if (!existingStaff.getStaffCode().equals(staff.getStaffCode()) &&
+                staffRepo.existsByStaffCode(staff.getStaffCode())) {
+            bindingResult.rejectValue("staffCode", "duplicate", "Mã nhân viên đã tồn tại");
+        }
+
+        // Kiểm Tra Trùng Lặp Email FPT
+        if (!existingStaff.getAccountFpt().equals(staff.getAccountFpt()) &&
+                staffRepo.existsByAccountFpt(staff.getAccountFpt())) {
+            bindingResult.rejectValue("accountFpt", "duplicate", "Email FPT đã tồn tại");
+        }
+
+        // Kiểm Tra Trùng Lặp Email FE
+        if (!existingStaff.getAccountFe().equals(staff.getAccountFe()) &&
+                staffRepo.existsByAccountFe(staff.getAccountFe())) {
+            bindingResult.rejectValue("accountFe", "duplicate", "Email FE đã tồn tại");
+        }
+
+        // Kiểm Tra Email Hợp Lệ
+        if (!isValidEmail(staff.getAccountFpt(), staff.getStaffCode()) ||
+                !isValidEmail(staff.getAccountFe(), staff.getStaffCode())) {
+            bindingResult.rejectValue("accountFpt", "invalid", "Email FPT không hợp lệ hoặc không chứa mã nhân viên");
+            bindingResult.rejectValue("accountFe", "invalid", "Email FE không hợp lệ hoặc không chứa mã nhân viên");
+        }
+
+        // Nếu Có Bất Kỳ Lỗi Nào, Trả Về Form Với Thông Báo Lỗi
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("staff", staff);
+            return "staff/update";
+        }
+
+        // Cập Nhật Các Thuộc Tính Của Nhân Viên
         existingStaff.setStaffCode(staff.getStaffCode());
         existingStaff.setName(staff.getName());
         existingStaff.setAccountFpt(staff.getAccountFpt());
@@ -119,13 +174,14 @@ public class StaffController {
         existingStaff.setStatus(staff.getStatus());
         existingStaff.setLastModifiedDate(System.currentTimeMillis());
 
-        // Lưu nhân viên đã cập nhật vào cơ sở dữ liệu
+        // Lưu Nhân Viên Đã Cập Nhật Vào Cơ Sở Dữ Liệu
         staffRepo.save(existingStaff);
 
-        // Thêm thông báo thành công và chuyển hướng về trang danh sách nhân viên
+        // Thêm Thông Báo Thành Công Và Chuyển Hướng Về Trang Danh Sách Nhân Viên
         redirectAttributes.addFlashAttribute("successMessage", "Nhân viên đã được cập nhật thành công");
         return "redirect:/staff/index";
     }
+
 
     @GetMapping("/download-template")
     public ResponseEntity<byte[]> downloadTemplate() throws IOException {
@@ -198,7 +254,7 @@ public class StaffController {
             for (Row row : sheet) {
                 rowIndex++;
                 if (rowIndex == 1) {
-                    continue;
+                    continue; // Skip header row
                 }
 
                 try {
@@ -222,31 +278,11 @@ public class StaffController {
 
                     staffRepo.save(staff);
 
-                    String[] majorParts = majorInfo.split(" - ");
-                    if (majorParts.length < 3) {
-                        throw new RuntimeException("Thông tin bộ môn - chuyên ngành - cơ sở không hợp lệ");
-                    }
-
-                    String majorName = majorParts[0].trim();
-                    String departmentName = majorParts[1].trim();
-                    String facilityName = majorParts[2].replaceAll("[()]", "").trim();
-
-                    MajorFacilityEntity majorFacility = majorFacilityRepo
-                            .findByMajorNameAndDepartmentFacilityDepartmentNameAndDepartmentFacilityFacilityName(
-                                    majorName, departmentName, facilityName)
-                            .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ môn - chuyên ngành - cơ sở tương ứng"));
-
-                    StaffMajorFacilityEntity staffMajor = new StaffMajorFacilityEntity();
-                    staffMajor.setStaff(staff);
-                    staffMajor.setMajorFacility(majorFacility);
-                    staffMajor.setStatus(0);
-                    staffMajor.setCreatedDate(System.currentTimeMillis());
-
-                    staffMajorFacilityRepo.save(staffMajor);
+                    // Removed validation and saving related to majorInfo
 
                     importedCount++;
                 } catch (Exception e) {
-                    String errorMessage = "Error processing row " + rowIndex + ": " + e.getMessage();
+                    String errorMessage = "Lỗi khi xử lý dòng " + rowIndex + ": " + e.getMessage();
                     errorLog.append(errorMessage).append("\n");
                 }
             }
@@ -261,7 +297,7 @@ public class StaffController {
             importHistoryRepo.save(importHistory);
 
             if (importedCount > 0) {
-                redirectAttributes.addFlashAttribute("success", "Import thành công. Số bản ghi đã import: " + importedCount);
+                redirectAttributes.addFlashAttribute("successMessage", "Import thành công. Số bản ghi đã import: " + importedCount);
             } else {
                 redirectAttributes.addFlashAttribute("error", "Không có bản ghi nào được import thành công.");
             }

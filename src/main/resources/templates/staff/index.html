@@ -28,6 +28,9 @@
         <span th:text="${successMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <span th:text="${error}"></span>
+    </div>
 <!--    <div th:if="${errorLog}" class="alert alert-danger">-->
 <!--        <pre th:text="${errorLog}"></pre>-->
 <!--    </div>-->
@@ -180,38 +183,38 @@
     <div id="employeeModal" class="modal fade" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true" th:classappend="${showModal} ? 'show' : ''">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form th:action="@{/staff/create}" method="post" th:object="${staffForm}">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="employeeModalLabel">Thêm nhân viên</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="employeeModalLabel">Thêm nhân viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form th:action="@{/staff/create}" th:object="${staffForm}" method="post">
                         <div class="mb-3">
                             <label for="staffCode" class="form-label">Mã nhân viên (*)</label>
-                            <input type="text" class="form-control" id="staffCode" th:field="*{staffCode}" th:classappend="${#fields.hasErrors('staffCode')} ? 'is-invalid' : ''">
+                            <input type="text" class="form-control" id="staffCode" th:field="*{staffCode}" th:classappend="${#fields.hasErrors('staffCode')} ? 'is-invalid' : ''" required>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('staffCode')}" th:errors="*{staffCode}"></div>
                         </div>
                         <div class="mb-3">
                             <label for="name" class="form-label">Tên nhân viên (*)</label>
-                            <input type="text" class="form-control" id="name" th:field="*{name}" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''">
+                            <input type="text" class="form-control" id="name" th:field="*{name}" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" required>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
                         </div>
                         <div class="mb-3">
                             <label for="accountFpt" class="form-label">Email FPT (*)</label>
-                            <input type="email" class="form-control" id="accountFpt" th:field="*{accountFpt}" th:classappend="${#fields.hasErrors('accountFpt')} ? 'is-invalid' : ''">
+                            <input type="email" class="form-control" id="accountFpt" th:field="*{accountFpt}" th:classappend="${#fields.hasErrors('accountFpt')} ? 'is-invalid' : ''" required>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('accountFpt')}" th:errors="*{accountFpt}"></div>
                         </div>
                         <div class="mb-3">
                             <label for="accountFe" class="form-label">Email FE (*)</label>
-                            <input type="email" class="form-control" id="accountFe" th:field="*{accountFe}" th:classappend="${#fields.hasErrors('accountFe')} ? 'is-invalid' : ''">
+                            <input type="email" class="form-control" id="accountFe" th:field="*{accountFe}" th:classappend="${#fields.hasErrors('accountFe')} ? 'is-invalid' : ''" required>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('accountFe')}" th:errors="*{accountFe}"></div>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary">Lưu</button>
-                    </div>
-                </form>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-primary">Lưu</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -225,19 +228,6 @@
         if (showModal) {
             const employeeModal = new bootstrap.Modal(document.getElementById('employeeModal'));
             employeeModal.show();
-        }
-
-        // Xử lý hiển thị thông báo thành công
-        const successMessage = [[${successMessage}]];
-        if (successMessage) {
-            const alertElement = document.createElement('div');
-            alertElement.className = 'alert alert-success alert-dismissible fade show';
-            alertElement.setAttribute('role', 'alert');
-            alertElement.innerHTML = `
-            ${successMessage}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-            document.querySelector('.container-fluid').prepend(alertElement);
         }
 
         // Xử lý hiển thị lịch sử import
@@ -263,88 +253,6 @@
                 .catch(error => console.error('Error:', error));
         });
 
-        // Xử lý import file
-        const importForm = document.getElementById('importForm');
-        const fileInput = document.getElementById('fileInput');
-        const importButton = document.getElementById('importButton');
-
-        importForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (fileInput.files.length === 0) {
-                alert('Vui lòng chọn file để import');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            importButton.disabled = true;
-            importButton.textContent = 'Đang import...';
-
-            fetch('/staff/import', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Import thành công: ' + data.message);
-                        location.reload();
-                    } else {
-                        alert('Import thất bại: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Có lỗi xảy ra khi import');
-                })
-                .finally(() => {
-                    importButton.disabled = false;
-                    importButton.textContent = 'Import';
-                    fileInput.value = '';
-                });
-        });
-
-        // Xử lý tải template
-        const downloadTemplateButton = document.getElementById('downloadTemplateButton');
-        downloadTemplateButton.addEventListener('click', function() {
-            window.location.href = '/staff/download-template';
-        });
-
-        // Xử lý phân trang
-        const paginationLinks = document.querySelectorAll('.pagination .page-link');
-        paginationLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const url = this.getAttribute('href');
-                if (url) {
-                    window.location.href = url;
-                }
-            });
-        });
-
-        // Xử lý thay đổi trạng thái nhân viên
-        const toggleStatusButtons = document.querySelectorAll('.toggle-status');
-        toggleStatusButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const url = this.getAttribute('href');
-                if (confirm('Bạn có chắc chắn muốn thay đổi trạng thái của nhân viên này?')) {
-                    fetch(url, { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                location.reload();
-                            } else {
-                                alert('Có lỗi xảy ra: ' + data.message);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Có lỗi xảy ra khi thay đổi trạng thái');
-                        });
-                }
-            });
-        });
     });
 </script>
 </body>
